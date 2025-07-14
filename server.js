@@ -9,6 +9,18 @@ app.use(cors());
 app.use(express.json());
 
 // Get all invoices
+app.get('/', (req, res) => {
+  const query = 'SELECT * FROM invoices';
+
+  db.query(query, (err, results) => {
+    if (err) {
+      console.error('Error fetching invoices:', err);
+      return res.status(500).json({ error: 'Database error' });
+    }
+
+    res.json(results);
+  });
+});
 app.get('/invoices', (req, res) => {
   const query = 'SELECT * FROM invoices';
 
