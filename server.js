@@ -1,6 +1,10 @@
 const express = require('express');
 const cors = require('cors');
-const db = require('./db');
+const mongoose = require('mongoose');
+
+const Invoice = require('./models/Invoice');
+const Item = require('./models/Item');
+const InvoiceData = require('./models/InvoiceData');
 
 const app = express();
 const PORT = 5000;
@@ -8,120 +12,109 @@ const PORT = 5000;
 app.use(cors());
 app.use(express.json());
 
-// Get all invoices
-app.get('/', (req, res) => {
-  const query = 'SELECT * FROM invoices';
+// ✅ MongoDB connection
+mongoose.connect('mongodb+srv://yrohan645:yoHHVZ82lZkG4Kt3@rohan.zysfuhl.mongodb.net/New?retryWrites=true&w=majority&appName=Rohan')
+  .then(() => console.log('✅ Connected to MongoDB'))
+  .catch((err) => console.error('❌ MongoDB connection error:', err));
 
-  db.query(query, (err, results) => {
-    if (err) {
-      console.error('Error fetching invoices:', err);
-      return res.status(500).json({ error: 'Database error' });
-    }
+async function seedInvoices() {
+  const existing = await Invoice.countDocuments();
+  if (existing === 0) {
+    await Invoice.insertMany([
+      {
+        customerName: 'Ravi Sharma',
+        phoneNumber: '9876543210',
+        address: '123 MG Road, Mumbai',
+      },
+      {
+        customerName: 'Anjali Mehta',
+        phoneNumber: '9123456780',
+        address: '456 Park Street, Delhi',
+      }
+    ]);
+    console.log('✅ Seed data added');
+  } else {
+    console.log('ℹ️ Invoices already exist, skipping seeding');
+  }
+}
 
-    res.json(results);
-  });
-});
-app.get('/invoices', (req, res) => {
-  const query = 'SELECT * FROM invoices';
+seedInvoices();
 
-  db.query(query, (err, results) => {
-    if (err) {
-      console.error('Error fetching invoices:', err);
-      return res.status(500).json({ error: 'Database error' });
-    }
 
-    res.json(results);
-  });
-});
-
-// Search invoices by customer name
-app.get('/invoices/search', (req, res) => {
-  const customerName = req.query.customerName;
-
-  const query = 'SELECT * FROM invoices WHERE LOWER(customerName) LIKE LOWER(?)';
-  const values = [`%${customerName}%`];
-
-  db.query(query, values, (err, results) => {
-    if (err) {
-      console.error('Error searching invoices:', err);
-      return res.status(500).json({ error: 'Database error' });
-    }
-
-    res.json(results);
-  });
+// 📄 Get all invoices
+app.get('/invoices', async (req, res) => {
+  try {
+    const invoices = await Invoice.find();
+    res.json(invoices);
+  } catch (err) {
+    res.status(500).json({ error: 'Database error' });
+  }
 });
 
-// Create a new invoice
-app.post('/invoices', (req, res) => {
-  const { customerName, phoneNumber, address } = req.body;
+// 🔍 Search invoices by customer name
+app.get('/invoices/search', async (req, res) => {
+  const { customerName } = req.query;
 
-  const query = 'INSERT INTO invoices (customerName, phoneNumber, address) VALUES (?, ?, ?)';
-  const values = [customerName, phoneNumber, address];
+  try {
+    const invoices = await Invoice.find({
+      customerName: { $regex: new RegExp(customerName, 'i') },
+    });
+    res.json(invoices);
+  } catch (err) {
+    res.status(500).json({ error: 'Database error' });
+  }
+});
 
-  db.query(query, values, (err, result) => {
-    if (err) {
-      console.error('❌ Error inserting data:', err);
-      return res.status(500).json({ error: 'Database error' });
-    }
-
+// ➕ Create a new invoice
+app.post('/invoices', async (req, res) => {
+  try {
+    const newInvoice = new Invoice(req.body);
+    await newInvoice.save();
     res.status(201).json({ message: 'Invoice saved successfully' });
-  });
-});
-// GET /items - Retrieve all items from the database
-app.get('/items', (req, res) => {
-  const query = 'SELECT * FROM items';
-
-  db.query(query, (err, results) => {
-    if (err) {
-      console.error('❌ Error fetching items:', err);
-      return res.status(500).json({ error: 'Database error' });
-    }
-
-    res.status(200).json(results);
-  });
+  } catch (err) {
+    res.status(500).json({ error: 'Database error' });
+  }
 });
 
-// POST /items - Add new item to the database
-app.post('/items', (req, res) => {
+// 📦 Get all items
+app.get('/items', async (req, res) => {
+  try {
+    const items = await Item.find();
+    res.status(200).json(items);
+  } catch (err) {
+    res.status(500).json({ error: 'Database error' });
+  }
+});
+
+// ➕ Add new item
+app.post('/items', async (req, res) => {
   const { productName, sellingPrice, gstValue, unit, hsn } = req.body;
 
   if (!productName || !sellingPrice || !gstValue || !unit || !hsn) {
     return res.status(400).json({ error: 'All fields are required' });
   }
 
-  const query = 'INSERT INTO items (productName, sellingPrice, gstValue, unit, hsn) VALUES (?, ?, ?, ?, ?)';
-  const values = [productName, sellingPrice, gstValue, unit, hsn];
-
-  db.query(query, values, (err, result) => {
-    if (err) {
-      console.error('❌ Error inserting item:', err);
-      return res.status(500).json({ error: 'Database error' });
-    }
-
+  try {
+    const newItem = new Item({ productName, sellingPrice, gstValue, unit, hsn });
+    await newItem.save();
     res.status(201).json({ message: '✅ Item added successfully' });
-  });
+  } catch (err) {
+    res.status(500).json({ error: 'Database error' });
+  }
 });
 
+// ➕ Save invoice data
+app.post('/invoices/submit', async (req, res) => {
+  try {
+    const newInvoiceData = new InvoiceData(req.body);
+    await newInvoiceData.save();
+    res.status(200).json({ message: 'Invoice data saved successfully' });
+  } catch (err) {
+    res.status(500).json({ error: 'Database error' });
+  }
+});
 
-// Example POST route on the server
-app.post('/invoices/submit', (req, res) => {
-    const { invoiceId, selectedOption1, selectedOption2, inputText } = req.body;
-  
-    const query = 'INSERT INTO invoice_data (invoiceId, selectedOption1, selectedOption2, inputText) VALUES (?, ?, ?, ?)';
-    const values = [invoiceId, selectedOption1, selectedOption2, inputText];
-  
-    db.query(query, values, (err, result) => {
-      if (err) {
-        console.error('Error saving invoice data:', err);
-        return res.status(500).json({ error: 'Database error' });
-      }
-  
-      res.status(200).json({ message: 'Invoice data saved successfully' });
-    });
-  });
-  
-
-// Start server
+// 🚀 Start server
 app.listen(PORT, () => {
-  console.log(`🚀 Server running at http://localhost:${PORT}`);
+  console.log(`Server running at http://localhost:${PORT}`);
 });

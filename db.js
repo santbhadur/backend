@@ -1,18 +1,16 @@
-const mysql = require('mysql2');
+const mongoose = require('mongoose');
 
-const connection = mysql.createConnection({
-  host: 'localhost',
-  user: 'root',          // ✅ Your MySQL username
-  password: '',          // ✅ Your MySQL password (leave empty if no password)
-  database: 'invoiceDB',
+const mongoURI = 'mongodb+srv://yrohan645:yoHHVZ82lZkG4Kt3@rohan.zysfuhl.mongodb.net/New?retryWrites=true&w=majority&appName=Rohan';
+
+mongoose.connect(mongoURI, {
+  useNewUrlParser: true,
+  useUnifiedTopology: true,
+})
+.then(() => {
+  console.log('✅ Connected to MongoDB database');
+})
+.catch((err) => {
+  console.error('❌ Error connecting to MongoDB:', err);
 });
 
-connection.connect((err) => {
-  if (err) {
-    console.error('❌ Error connecting to MySQL:', err);
-    return;
-  }
-  console.log('✅ Connected to MySQL database');
-});
-
-module.exports = connection;
+module.exports = mongoose;
