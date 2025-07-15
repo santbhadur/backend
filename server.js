@@ -17,39 +17,20 @@ mongoose.connect('mongodb+srv://yrohan645:yoHHVZ82lZkG4Kt3@rohan.zysfuhl.mongodb
   .then(() => console.log('✅ Connected to MongoDB'))
   .catch((err) => console.error('❌ MongoDB connection error:', err));
 
-async function seedInvoices() {
-  const existing = await Invoice.countDocuments();
-  if (existing === 0) {
-    await Invoice.insertMany([
-      {
-        customerName: 'Ravi Sharma',
-        phoneNumber: '9876543210',
-        address: '123 MG Road, Mumbai',
-      },
-      {
-        customerName: 'Anjali Mehta',
-        phoneNumber: '9123456780',
-        address: '456 Park Street, Delhi',
-      }
-    ]);
-    console.log('✅ Seed data added');
-  } else {
-    console.log('ℹ️ Invoices already exist, skipping seeding');
-  }
-}
 
-seedInvoices();
 
 
 // 📄 Get all invoices
-app.get('/invoices', async (req, res) => {
+app.get('/', async (req, res) => {
   try {
     const invoices = await Invoice.find();
-    res.json(invoices);
+    res.json(invoices); // This returns JSON at "/"
   } catch (err) {
     res.status(500).json({ error: 'Database error' });
   }
 });
+
+
 
 // 🔍 Search invoices by customer name
 app.get('/invoices/search', async (req, res) => {
