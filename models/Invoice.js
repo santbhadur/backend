@@ -1,9 +1,29 @@
 const mongoose = require('mongoose');
 
-const invoiceSchema = new mongoose.Schema({
+const InvoiceSchema = new mongoose.Schema({
+  invoiceNumber: Number,
+  customerId: String,
   customerName: String,
-  phoneNumber: String,
-  address: String,
-});
+  customerAddress: String,
+  invoiceDate: String,
+  dueDate: String,
+  notes: String,
 
-module.exports = mongoose.model('Invoice', invoiceSchema);
+  items: [Object],
+  totalProducts: Number,
+  totalQuantity: Number,
+  grandTotal: String,
+
+  // GST / Discounts
+  isIntraState: Boolean,
+  cgst: String,
+  sgst: String,
+  igst: String,
+  totalGstValue: String,
+  avgGstPercent: String,
+  avgDiscountPercent: String,
+  totalDiscountValue: String,
+
+}, { timestamps: true });
+
+module.exports = mongoose.model('Invoice', InvoiceSchema);
