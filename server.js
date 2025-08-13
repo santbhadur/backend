@@ -20,7 +20,42 @@ mongoose.connect('mongodb+srv://yrohan645:yoHHVZ82lZkG4Kt3@rohan.zysfuhl.mongodb
   .catch((err) => console.error('❌ MongoDB connection error:', err));
 
 // 📄 Get all invoices
+// Schema & Model
+const formSchema = new mongoose.Schema({
+  customerName: String,
+  phoneNumber: String,
+  price: Number,
+  gst: Number,
+  unit: String,
+});
+
+const FormModel = mongoose.model('FormSubmission', formSchema);
+
+// POST route to save multiple entries
+app.post('/save-all', async (req, res) => {
+  try {
+    const entries = req.body;
+    if (!Array.isArray(entries) || entries.length === 0) {
+      return res.status(400).json({ error: 'No entries provided' });
+    }
+    await FormModel.insertMany(entries);
+    res.status(200).json({ message: 'All entries saved successfully' });
+  } catch (error) {
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// Optional: GET route to view saved entries
 app.get('/', async (req, res) => {
+  try {
+    const forms = await FormModel.find();
+    res.status(200).json(forms);
+  } catch (err) {
+    console.error('❌ Error fetching form data:', err);
+    res.status(500).json({ error: 'Failed to fetch data' });
+  }
+});
+app.get('/invoices', async (req, res) => {
   try {
     const invoices = await Invoice.find();
     res.json(invoices);
@@ -68,6 +103,8 @@ app.post('/invoices', async (req, res) => {
     res.status(500).json({ error: 'Database error' });
   }
 });
+
+
 
 // 📦 Get all items
 app.get('/items', async (req, res) => {
